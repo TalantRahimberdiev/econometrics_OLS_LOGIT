@@ -1,0 +1,37 @@
+
+local vars age sex cp trestbps chol fbs restecg thalach exang oldpeak slope ca thal target
+cap mkdir C:\Users\admin\Desktop\graphs
+
+foreach var of local vars {
+
+    histogram `var', bin(20) normal name(hist_`var', replace)
+    graph export "graphs/hist_`var'.png", replace
+
+    graph box `var', name(box_`var', replace)
+    graph export "graphs/box_`var'.png", replace
+
+    quietly summarize `var', detail
+    local p25 = r(p25)
+    local p75 = r(p75)
+    local iqr = `p75' - `p25'
+    local lower = `p25' - 1.5 * `iqr'
+    local upper = `p75' + 1.5 * `iqr'
+
+    gen outlier_`var' = (`var' < `lower' | `var' > `upper')
+
+    * === Step 3: Remove Outliers ===
+    drop if outlier_`var' == 1
+}
+
+* === Step 4: Summary Statistics (Cleaned Data) ===
+export excel using "C:\Users\admin\Desktop\econometrics\cleaned_data.xlsx", firstrow(variables) replace
+
+
+* === Step 5: Visualizations After Outlier Removal ===
+foreach var of local vars {
+    histogram `var', bin(20) normal name(clean_hist_`var', replace)
+    graph export "graphs/clean_hist_`var'.png", replace
+
+    graph box `var', name(clean_box_`var', replace)
+    graph export "graphs/clean_box_`var'.png", replace
+}
